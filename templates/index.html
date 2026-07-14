@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codnell</title>
+<style>
+  :root {
+    --brand: #ec6e00;
+    --brand-dark: #df6100;
+    --brand-soft: #fff4ea;
+    --accent: #0089f7;
+    --ink: #161922;
+    --muted: #5b6470;
+    --bg: #eef1f5;
+    --card: #ffffff;
+    --border: #d9dee3;
+    --ok: #0b8a3a;
+    --err: #9b1c1c;
+    --radius: 12px;
+    --shadow: 0 10px 30px rgba(22, 25, 34, .08);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, Roboto, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -200px, #fff 0%, var(--bg) 60%) fixed;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  header.site-header {
+    background: linear-gradient(120deg, var(--ink), #252a36);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 4px solid var(--brand);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  header.site-header img { height: 46px; width: auto; }
+  header.site-header .brand-text { line-height: 1.15; }
+  header.site-header .brand-text .name { font-size: 20px; font-weight: 700; letter-spacing: .2px; }
+  header.site-header .brand-text .sub {
+    font-size: 11px; opacity: .75; letter-spacing: 1.2px; text-transform: uppercase;
+  }
+  main { max-width: 560px; margin: 28px auto 48px; padding: 0 14px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+  .card-head .icon {
+    flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px;
+    background: var(--brand-soft); color: var(--brand);
+    display: grid; place-items: center; font-size: 20px;
+  }
+  h1 { font-size: 19px; margin: 0; }
+  .lead { font-size: 13.5px; color: var(--muted); margin: 6px 0 16px; }
+
+  label { display: block; font-weight: 600; margin: 14px 0 5px; font-size: 13px; }
+  .req { color: var(--brand); }
+  input, select {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--border);
+    border-radius: 9px; font-size: 14px; background: #fff; color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input::placeholder { color: #9aa3ad; }
+  input:focus, select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,137,247,.15);
+  }
+  input.invalid, select.invalid { border-color: var(--err); box-shadow: 0 0 0 3px rgba(155,28,28,.12); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0; border-radius: 9px; cursor: pointer; font-weight: 700; font-size: 14px;
+    transition: background .15s ease, transform .05s ease, box-shadow .15s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    margin-top: 18px; width: 100%; padding: 12px;
+    background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(236,110,0,.30);
+  }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-primary[disabled] { opacity: .65; cursor: not-allowed; }
+  .btn-ghost {
+    padding: 8px 12px; background: #fff; color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: #f6f8fa; }
+  .btn-ghost .ic { font-size: 13px; }
+
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.5);
+    border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .field-error {
+    display: none; color: var(--err); font-size: 12px; margin-top: 5px; font-weight: 600;
+  }
+  .field-error.show { display: block; }
+
+  .error {
+    margin-top: 16px; padding: 11px 13px; border-radius: 9px;
+    background: #fdecec; border: 1px solid #f5c2c2; color: var(--err); font-size: 13px;
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .results {
+    margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border);
+    animation: fade .25s ease;
+  }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .results-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .results-toolbar .count { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .results-toolbar .count b { color: var(--ink); }
+  .toolbar-actions { display: flex; gap: 8px; }
+
+  .result {
+    margin-bottom: 12px; padding: 14px; border-radius: 10px;
+    background: var(--brand-soft); border: 1px solid #f6d6b8;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .result .meta { flex: 1; min-width: 0; }
+  .result .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .4px;
+    color: #b35a00; font-weight: 700;
+  }
+  .result .id {
+    font-size: 19px; letter-spacing: 1.5px; font-weight: 800; margin: 2px 0 6px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--ink);
+    word-break: break-all;
+  }
+  .result ul {
+    margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 4px 16px;
+  }
+  .result ul li strong { color: var(--ink); }
+  .result .valid { color: var(--ok); font-weight: 700; }
+  .result .nok { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .result .nok .nok-title { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: #b35a00; font-weight: 700; }
+  .result .copy {
+    flex: 0 0 auto; padding: 8px 12px; font-size: 12.5px;
+    border: 1px solid #f0b277; background: #fff; color: var(--brand-dark);
+    border-radius: 8px; cursor: pointer; font-weight: 700; white-space: nowrap;
+    transition: background .15s ease;
+  }
+  .result .copy:hover { background: #fff0e2; }
+  .result .copy.done { color: var(--ok); border-color: #aee0bf; }
+
+  .footer-note {
+    font-size: 11.5px; color: #6b7280; margin-top: 18px; line-height: 1.5;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <img src="https://www.icebolethugroup.co.za/wp-content/uploads/2019/04/Icebolethu-Funerals-No-BG-RGB-300x300.png"
+       alt="Icebolethu Group">
+  <div class="brand-text">
+    <div class="name">Icebolethu Group</div>
+    <div class="sub">Dummy ID Generator</div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="card-head">
+      <div class="icon" aria-hidden="true">&#128273;</div>
+      <div>
+        <h1>Dummy ID Generator</h1>
+      </div>
+    </div>
+    <p class="lead">Enter a date of birth and gender to generate a valid-format
+       South African ID number for system testing purposes.</p>
+
+    <form method="post" action="/" id="gen-form" novalidate>
+      <label for="dob">Date of Birth <span class="req">*</span></label>
+      <input type="date" id="dob" name="dob" value="{{ dob }}" required
+             max="{{ today }}" autocomplete="off">
+      <div class="field-error" id="dob-error">Please enter a valid date of birth (not in the future).</div>
+
+      <div class="grid">
+        <div>
+          <label for="gender">Gender</label>
+          <select id="gender" name="gender">
+            <option value="female"{{ ' selected' if gender == 'female' else '' }}>Female</option>
+            <option value="male"{{ ' selected' if gender == 'male' else '' }}>Male</option>
+          </select>
+        </div>
+        <div>
+          <label for="citizen">Citizenship</label>
+          <select id="citizen" name="citizen">
+            <option value="1"{{ ' selected' if citizen == '1' else '' }}>SA Citizen</option>
+            <option value="0"{{ ' selected' if citizen == '0' else '' }}>Permanent Resident</option>
+          </select>
+        </div>
+        <div class="full">
+          <label for="quantity">Quantity (1&ndash;100)</label>
+          <input type="number" id="quantity" name="quantity" min="1" max="100"
+                 value="{{ quantity }}" required inputmode="numeric">
+          <div class="field-error" id="quantity-error">Quantity must be between 1 and 100.</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn">
+        <span id="submit-label">Generate Dummy ID{{ '' if quantity == 1 else 's' }}</span>
+      </button>
+    </form>
+
+    {% if error %}
+      <div class="error" role="alert">&#9888;&#65039; {{ error }}</div>
+    {% endif %}
+
+    {% if results %}
+      <section class="results" id="results" aria-live="polite">
+        <div class="results-toolbar">
+          <span class="count"><b>{{ results|length }}</b> ID{{ '' if results|length == 1 else 's' }} generated</span>
+          <div class="toolbar-actions">
+            <button type="button" class="btn btn-ghost" id="copy-all"><span class="ic">&#128203;</span> Copy all</button>
+            <button type="button" class="btn btn-ghost" id="download-csv"><span class="ic">&#11015;</span> CSV</button>
+          </div>
+        </div>
+        {% for result in results %}
+        <div class="result"
+             data-number="{{ result.number }}"
+             data-birth="{{ result.birth_date }}"
+             data-gender="{{ result.gender }}"
+             data-citizenship="{{ result.citizenship }}"
+             data-name="{{ result.name }}"
+             data-email="{{ result.email }}"
+             data-marital="{{ result.marital_status }}"
+             data-valid="{{ 'Yes' if result.valid else 'No' }}"
+             data-nok-name="{{ result.next_of_kin.name }}"
+             data-nok-email="{{ result.next_of_kin.email }}"
+             data-nok-dob="{{ result.next_of_kin.dob }}"
+             data-nok-gender="{{ result.next_of_kin.gender }}"
+             data-nok-relationship="{{ result.next_of_kin.relationship }}"
+             data-nok-id="{{ result.next_of_kin.id_number }}"
+             data-nok-marital="{{ result.next_of_kin.marital_status }}">
+          <div class="meta">
+            <div class="label">Main member_Details</div>
+            <div class="id">{{ result.number }}</div>
+            <ul>
+              <li><strong>Name:</strong> {{ result.name }} &lt;{{ result.email }}&gt;</li>
+              <li><strong>DOB:</strong> {{ result.birth_date }}</li>
+              <li><strong>Gender:</strong> {{ result.gender }}</li>
+              <li><strong>Marital Status:</strong> {{ result.marital_status }}</li>
+              <li><strong>Citizenship:</strong> {{ result.citizenship }}</li>
+              <li><strong>Checksum:</strong> <span class="valid">{{ 'Valid' if result.valid else 'Invalid' }}</span></li>
+            </ul>
+            <div class="nok">
+              <div class="nok-title">Benefiary_Details</div>
+              <ul>
+                <li><strong>ID:</strong> {{ result.next_of_kin.id_number }}</li>
+                <li><strong>Name:</strong> {{ result.next_of_kin.name }} &lt;{{ result.next_of_kin.email }}&gt;</li>
+                <li><strong>DOB:</strong> {{ result.next_of_kin.dob }}</li>
+                <li><strong>Gender:</strong> {{ result.next_of_kin.gender }}</li>
+                <li><strong>Relationship:</strong> {{ result.next_of_kin.relationship }}</li>
+                <li><strong>Marital Status:</strong> {{ result.next_of_kin.marital_status }}</li>
+              </ul>
+            </div>
+          </div>
+          <button type="button" class="copy" data-copy="{{ result.number }}">Copy</button>
+        </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <p class="footer-note">For system testing only &mdash; not for real identity
+       verification. All numbers are randomly generated and do not belong to real
+       persons.</p>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  (function () {
+    var form = document.getElementById('gen-form');
+    var dob = document.getElementById('dob');
+    var qty = document.getElementById('quantity');
+    var submitBtn = document.getElementById('submit-btn');
+    var submitLabel = document.getElementById('submit-label');
+    var toast = document.getElementById('toast');
+    var today = new Date().toISOString().slice(0, 10);
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+    }
+
+    function clearError(el) {
+      el.classList.remove('invalid');
+      var err = document.getElementById(el.id + '-error');
+      if (err) err.classList.remove('show');
+    }
+
+    dob.addEventListener('input', function () { clearError(dob); });
+    qty.addEventListener('input', function () { clearError(qty); });
+
+    form.addEventListener('submit', function (e) {
+      var ok = true;
+      var dobVal = dob.value;
+      var qtyVal = parseInt(qty.value, 10);
+
+      if (!dobVal || dobVal > today) {
+        dob.classList.add('invalid');
+        document.getElementById('dob-error').classList.add('show');
+        ok = false;
+      }
+      if (isNaN(qtyVal) || qtyVal < 1 || qtyVal > 100) {
+        qty.classList.add('invalid');
+        document.getElementById('quantity-error').classList.add('show');
+        ok = false;
+      }
+      if (!ok) { e.preventDefault(); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Generating&hellip;';
+    });
+
+    function copyText(text, btn) {
+      var done = function () {
+        if (btn) {
+          var orig = btn.textContent;
+          btn.textContent = 'Copied';
+          btn.classList.add('done');
+          setTimeout(function () { btn.textContent = orig; btn.classList.remove('done'); }, 1400);
+        }
+        showToast('Copied to clipboard');
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var t = document.createElement('textarea');
+        t.value = text; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch (err) {}
+        document.body.removeChild(t); done();
+      }
+    }
+
+    document.querySelectorAll('.copy[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () { copyText(btn.getAttribute('data-copy'), btn); });
+    });
+
+    var results = Array.prototype.slice.call(document.querySelectorAll('.result'));
+
+    document.getElementById('copy-all').addEventListener('click', function () {
+      if (!results.length) return;
+      copyText(results.map(function (r) { return r.getAttribute('data-number'); }).join('\n'));
+    });
+
+    document.getElementById('download-csv').addEventListener('click', function () {
+      if (!results.length) return;
+      var rows = [['ID Number', 'Name', 'Email', 'Date of Birth', 'Gender', 'Marital Status', 'Citizenship', 'Checksum Valid', 'NOK ID', 'NOK Name', 'NOK Email', 'NOK DOB', 'NOK Gender', 'NOK Relationship', 'NOK Marital Status']];
+      results.forEach(function (r) {
+        rows.push([
+          r.getAttribute('data-number'),
+          r.getAttribute('data-name'),
+          r.getAttribute('data-email'),
+          r.getAttribute('data-birth'),
+          r.getAttribute('data-gender'),
+          r.getAttribute('data-marital'),
+          r.getAttribute('data-citizenship'),
+          r.getAttribute('data-valid'),
+          r.getAttribute('data-nok-id'),
+          r.getAttribute('data-nok-name'),
+          r.getAttribute('data-nok-email'),
+          r.getAttribute('data-nok-dob'),
+          r.getAttribute('data-nok-gender'),
+          r.getAttribute('data-nok-relationship'),
+          r.getAttribute('data-nok-marital')
+        ]);
+      });
+      var csv = rows.map(function (row) {
+        return row.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
+      }).join('\r\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'dummy_ids.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSV downloaded');
+    });
+  })();
+</script>
+</body>
+</html>
