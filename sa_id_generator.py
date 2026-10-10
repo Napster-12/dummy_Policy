@@ -79,10 +79,11 @@ def generate_id(
     today = _dt.date.today()
 
     if birth_date is None:
-        age = r.randint(18, 90)
-        start = today.replace(year=today.year - age)
-        days = r.randint(0, 364)
-        birth_date = start + _dt.timedelta(days=days)
+        # Pick a day between 18 and 90 years ago; counting days avoids
+        # date.replace() failing on 29 February.
+        min_days = 18 * 365 + 5
+        max_days = 90 * 365 + 22
+        birth_date = today - _dt.timedelta(days=r.randint(min_days, max_days))
     else:
         if birth_date > today:
             raise ValueError("birth_date cannot be in the future")

@@ -12,6 +12,7 @@ Then open http://127.0.0.1:8000 in your browser.
 from __future__ import annotations
 
 import datetime as _dt
+import os
 import random as _rnd
 
 from flask import Flask, render_template, request
@@ -22,87 +23,102 @@ PORT = 8000
 
 MIN_QTY = 1
 MAX_QTY = 100
+MIN_DOB = _dt.date(1900, 1, 1)
 
-DUMMY_FIRST_NAMES = [
-    "James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda",
-    "William", "Elizabeth", "David", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-    "Thomas", "Sarah", "Charles", "Karen", "Christopher", "Lisa", "Daniel", "Nancy",
-    "Matthew", "Betty", "Anthony", "Margaret", "Mark", "Sandra", "Donald", "Ashley",
-    "Steven", "Dorothy", "Andrew", "Kimberly", "Paul", "Emily", "Joshua", "Donna",
-    "Kenneth", "Michelle", "Kevin", "Carol", "Brian", "Amanda", "George", "Melissa",
-    "Timothy", "Deborah", "Ronald", "Stephanie", "Edward", "Rebecca", "Jason", "Sharon",
-    "Jeffrey", "Laura", "Ryan", "Cynthia",
-]
+DUMMY_FIRST_NAMES = {
+    "male": [
+        "James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph",
+        "Thomas", "Charles", "Christopher", "Daniel", "Matthew", "Anthony", "Mark",
+        "Donald", "Steven", "Andrew", "Paul", "Joshua", "Kenneth", "Kevin", "Brian",
+        "George", "Timothy", "Ronald", "Edward", "Jason", "Jeffrey", "Ryan",
+        "Sipho", "Thabo", "Mandla", "Sizwe", "Bongani", "Themba",
+    ],
+    "female": [
+        "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan",
+        "Jessica", "Sarah", "Karen", "Lisa", "Nancy", "Betty", "Margaret", "Sandra",
+        "Hannah", "Dorothy", "Kimberly", "Emily", "Donna", "Michelle", "Carol",
+        "Amanda", "Melissa", "Deborah", "Stephanie", "Rebecca", "Sharon", "Laura",
+        "Cynthia", "Nomsa", "Thandi", "Lerato", "Zanele", "Nokuthula", "Naledi",
+    ],
+}
 
 DUMMY_LAST_NAMES = [
     "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-    "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
-    "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
-    "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
-    "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen",
-    "Hill", "Flores", "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera",
-    "Campbell", "Mitchell", "Carter", "Roberts",
+    "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee",
+    "Thompson", "White", "Harris", "Clark", "Lewis", "Robinson", "Walker", "Young",
+    "Allen", "King", "Wright", "Scott", "Hill", "Green", "Adams", "Nelson", "Baker",
+    "Hall", "Campbell", "Mitchell", "Carter", "Roberts", "Dlamini", "Nkosi",
+    "Ndlovu", "Khumalo", "Mokoena", "Naidoo", "Botha", "Van der Merwe",
 ]
 
-DUMMY_RELATIONSHIP = ["Spouse", "Parent", "Sibling", "Child", "Partner", "Guardian"]
 DUMMY_MARITAL_STATUS = ["Single", "Married", "Divorced", "Widowed", "Separated"]
 
 app = Flask(__name__)
 
 
-def _make_person() -> dict:
-    first = _rnd.choice(DUMMY_FIRST_NAMES)
-    last = _rnd.choice(DUMMY_LAST_NAMES)
+# Relationships that share the member's surname.
+FAMILY_RELATIONSHIPS = ("Spouse", "Parent", "Sibling", "Child")
+
+
+def _email(first: str, last: str) -> str:
+    local = f"{first}.{last}".lower().replace(" ", "")
+    return f"{local}@test.co.za"
+
+
+def _make_person(gender: str, last: str | None = None) -> dict:
+    first = _rnd.choice(DUMMY_FIRST_NAMES[gender])
+    last = last or _rnd.choice(DUMMY_LAST_NAMES)
     return {
         "first_name": first,
         "last_name": last,
         "name": f"{first} {last}",
-        "email": f"{first.lower()}.{last.lower()}@test.co.za",
+        "email": _email(first, last),
         "marital_status": _rnd.choice(DUMMY_MARITAL_STATUS),
     }
 
 
-def _make_next_of_kin(birth_date: _dt.date, gender: str) -> dict:
-    relationship = _rnd.choice(DUMMY_RELATIONSHIP)
-    first = _rnd.choice(DUMMY_FIRST_NAMES)
-    last = _rnd.choice(DUMMY_LAST_NAMES)
-    nok_gender = _rnd.choice(["Male", "Female"]) if relationship in ("Spouse", "Partner") else gender
+def _random_date_in_year(year: int) -> _dt.date:
+    return _dt.date(year, _rnd.randint(1, 12), _rnd.randint(1, 28))
+
+
+def _make_next_of_kin(birth_date: _dt.date, last_name: str) -> dict:
+    today = _dt.date.today()
+    age = today.year - birth_date.year
+
+    # Only offer relationships that make sense for the member's age.
+    options = ["Parent", "Sibling"]
+    if age >= 18:
+        options += ["Spouse", "Partner"]
+    if age >= 36:
+        options.append("Child")
+    if age < 21:
+        options.append("Guardian")
+    relationship = _rnd.choice(options)
 
     if relationship == "Child":
-        nok_birth = _dt.date(
-            birth_date.year + _rnd.randint(18, 35),
-            _rnd.randint(1, 12),
-            _rnd.randint(1, 28),
-        )
-    elif relationship == "Parent":
-        nok_birth = _dt.date(
-            birth_date.year - _rnd.randint(20, 40),
-            _rnd.randint(1, 12),
-            _rnd.randint(1, 28),
-        )
+        nok_year = birth_date.year + _rnd.randint(18, min(35, age - 18))
+    elif relationship in ("Parent", "Guardian"):
+        nok_year = birth_date.year - _rnd.randint(20, 40)
     elif relationship == "Sibling":
-        nok_birth = _dt.date(
-            birth_date.year + _rnd.randint(-10, 10),
-            _rnd.randint(1, 12),
-            _rnd.randint(1, 28),
-        )
+        nok_year = birth_date.year + _rnd.randint(-10, 10)
     else:
-        nok_birth = _dt.date(
-            birth_date.year + _rnd.randint(-5, 5),
-            _rnd.randint(1, 12),
-            _rnd.randint(1, 28),
-        )
+        nok_year = birth_date.year + _rnd.randint(-5, 5)
 
-    nok_birth = min(nok_birth, _dt.date.today())
-    nok_id = generate_id(birth_date=nok_birth, gender=nok_gender.lower(), citizen=True)
+    nok_year = max(1900, nok_year)
+    nok_birth = min(_random_date_in_year(nok_year), today)
+
+    nok_gender = _rnd.choice(("male", "female"))
+    family_name = last_name if relationship in FAMILY_RELATIONSHIPS else None
+    person = _make_person(nok_gender, family_name)
+    nok_id = generate_id(birth_date=nok_birth, gender=nok_gender, citizen=True)
 
     return {
-        "name": f"{first} {last}",
-        "email": f"{first.lower()}.{last.lower()}@test.co.za",
+        "name": person["name"],
+        "email": person["email"],
         "dob": nok_birth.isoformat(),
-        "gender": nok_gender,
+        "gender": nok_gender.title(),
         "relationship": relationship,
-        "marital_status": _rnd.choice(DUMMY_MARITAL_STATUS),
+        "marital_status": person["marital_status"],
         "id_number": nok_id.number,
     }
 
@@ -122,7 +138,7 @@ def _parse_date(value: str) -> _dt.date | None:
 
 
 def _to_dict(sid: SAID) -> dict:
-    person = _make_person()
+    person = _make_person(sid.gender)
     return {
         "number": sid.number,
         "birth_date": sid.birth_date.isoformat(),
@@ -132,7 +148,7 @@ def _to_dict(sid: SAID) -> dict:
         "email": person["email"],
         "marital_status": person["marital_status"],
         "valid": is_valid(sid.number),
-        "next_of_kin": _make_next_of_kin(sid.birth_date, sid.gender),
+        "next_of_kin": _make_next_of_kin(sid.birth_date, person["last_name"]),
     }
 
 
@@ -146,6 +162,8 @@ def index():
         "results": None,
         "error": None,
         "today": _dt.date.today().isoformat(),
+        "min_dob": MIN_DOB.isoformat(),
+        "max_qty": MAX_QTY,
     }
 
     if request.method == "POST":
@@ -165,6 +183,8 @@ def index():
             ctx["error"] = "Please enter a valid date of birth."
         elif birth_date > _dt.date.today():
             ctx["error"] = "Date of birth cannot be in the future."
+        elif birth_date < MIN_DOB:
+            ctx["error"] = "Date of birth must be on or after 1 January 1900."
         elif gender not in ("male", "female"):
             ctx["error"] = "Please select a valid gender."
         else:
@@ -176,4 +196,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host=HOST, port=PORT, debug=True)
+    app.run(host=HOST, port=PORT, debug=os.environ.get("FLASK_DEBUG") == "1")
